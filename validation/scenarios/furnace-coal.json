@@ -1,0 +1,26 @@
+{
+  "id": "furnace-coal",
+  "research": "all",
+  "warmup_ticks": 600,
+  "measure_ticks": 19200,
+  "measure": ["iron-plate", "coal"],
+  "compare": true,
+  "recipe_overrides": { "1": "iron-plate" },
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "stone-furnace", "position": { "x": 1.0, "y": 1.0 } },
+        { "entity_number": 2, "name": "inserter", "position": { "x": 1.5, "y": -0.5 }, "direction": 0 },
+        { "entity_number": 3, "name": "inserter", "position": { "x": 0.5, "y": 2.5 }, "direction": 0 },
+        { "entity_number": 4, "name": "small-electric-pole", "position": { "x": 2.5, "y": 1.5 } }
+      ]
+    }
+  },
+  "points": [
+    { "kind": "source", "x": 1.5, "y": -1.5, "items": ["iron-ore", "coal"] },
+    { "kind": "sink", "x": 0.5, "y": 3.5 }
+  ],
+  "expect": { "iron-plate": { "produced_per_second": 0.3125, "tolerance": 0.01 } }
+}

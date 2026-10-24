@@ -1,0 +1,22 @@
+# PT: Banco de desenvolvimento. A porta só escuta em 127.0.0.1 e a senha vem do .env.
+# EN: Development database. The port only listens on 127.0.0.1 and the password comes from .env.
+services:
+  db:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: ${BF_DB_USER:?defina BF_DB_USER no .env / set BF_DB_USER in .env}
+      POSTGRES_PASSWORD: ${BF_DB_PASSWORD:?defina BF_DB_PASSWORD no .env / set BF_DB_PASSWORD in .env}
+      POSTGRES_DB: ${BF_DB_NAME:-blueprint_forge}
+    ports:
+      - "127.0.0.1:${BF_DB_PORT:-5433}:5432"
+    volumes:
+      - bf-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  bf-db-data:

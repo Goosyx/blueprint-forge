@@ -1,0 +1,31 @@
+{
+  "id": "red-science-chain",
+  "research": "all",
+  "warmup_ticks": 1800,
+  "measure_ticks": 7200,
+  "measure": ["automation-science-pack", "iron-gear-wheel"],
+  "compare": true,
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "assembling-machine-2", "position": { "x": 1.5, "y": 1.5 }, "recipe": "iron-gear-wheel" },
+        { "entity_number": 2, "name": "fast-inserter", "position": { "x": 3.5, "y": 1.5 }, "direction": 12 },
+        { "entity_number": 3, "name": "assembling-machine-2", "position": { "x": 5.5, "y": 1.5 }, "recipe": "automation-science-pack" },
+        { "entity_number": 4, "name": "fast-inserter", "position": { "x": 1.5, "y": -0.5 }, "direction": 0 },
+        { "entity_number": 5, "name": "fast-inserter", "position": { "x": 5.5, "y": -0.5 }, "direction": 0 },
+        { "entity_number": 6, "name": "fast-inserter", "position": { "x": 5.5, "y": 3.5 }, "direction": 0 },
+        { "entity_number": 7, "name": "medium-electric-pole", "position": { "x": 3.5, "y": -0.5 } },
+        { "entity_number": 8, "name": "medium-electric-pole", "position": { "x": 3.5, "y": 3.5 } }
+      ],
+      "wires": [[7, 5, 8, 5]]
+    }
+  },
+  "points": [
+    { "kind": "source", "x": 1.5, "y": -1.5, "items": ["iron-plate"] },
+    { "kind": "source", "x": 5.5, "y": -1.5, "items": ["copper-plate"] },
+    { "kind": "sink", "x": 5.5, "y": 4.5 }
+  ],
+  "expect": { "automation-science-pack": { "produced_per_second": 0.15, "tolerance": 0.01 } }
+}

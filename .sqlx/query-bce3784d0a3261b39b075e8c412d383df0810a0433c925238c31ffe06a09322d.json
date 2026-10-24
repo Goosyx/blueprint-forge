@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE blueprints SET title = COALESCE($3, title),\n                               description = CASE WHEN $4::boolean THEN $5 ELSE description END,\n                               updated_at = now()\n         WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bce3784d0a3261b39b075e8c412d383df0810a0433c925238c31ffe06a09322d"
+}

@@ -1,0 +1,34 @@
+# PT: Alvos de fuzzing (cargo-fuzz, Rust nightly). Fica fora do workspace porque precisa do nightly.
+# EN: Fuzzing targets (cargo-fuzz, Rust nightly). Kept outside the workspace because it needs nightly.
+[package]
+name = "bf-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+bf-blueprint = { path = "../crates/bf-blueprint" }
+bf-analysis = { path = "../crates/bf-analysis" }
+bf-calc = { path = "../crates/bf-calc" }
+bf-data = { path = "../crates/bf-data" }
+
+[[bin]]
+name = "decode"
+path = "fuzz_targets/decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "analyze"
+path = "fuzz_targets/analyze.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]

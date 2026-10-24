@@ -1,0 +1,11 @@
+{
+  "id": "golden-beacons",
+  "blueprint_file": "golden/02-beacons.txt",
+  "research": "all",
+  "warmup_ticks": 60,
+  "measure_ticks": 60,
+  "measure": [],
+  "compare": true,
+  "compare_bonuses_only": true,
+  "power": "cover"
+}

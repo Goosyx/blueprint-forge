@@ -1,0 +1,42 @@
+# PT: Rust. EN: Rust.
+/target/
+
+# PT: Node e interface web. EN: Node and web interface.
+node_modules/
+/web/dist/
+/web/src/lib/wasm/pkg/
+
+# PT: Configuração local e segredos. EN: Local configuration and secrets.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# PT: Dados, textos e ícones do jogo são da Wube Software e gerados na máquina de cada um a
+#     partir da própria cópia do jogo; nunca entram no repositório.
+# EN: Game data, text and icons belong to Wube Software and are generated on each machine from
+#     the user's own copy of the game; they never enter the repository.
+/game-assets/
+/factorio/
+factorio_*.tar.xz
+factorio-headless*/
+data-raw-dump*.json
+data.raw*.json
+
+# PT: Saídas do jogo e da validação (saves, logs, relatórios). EN: Game and validation output (saves, logs, reports).
+script-output/
+*.zip
+*.log
+/validation/reports/
+
+# PT: Arquivos locais do desenvolvedor. EN: Local developer files.
+/CONTRIBUTING.md
+/docs/PLANO.md
+
+# PT: Editores e sistema operacional. EN: Editors and operating system.
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store

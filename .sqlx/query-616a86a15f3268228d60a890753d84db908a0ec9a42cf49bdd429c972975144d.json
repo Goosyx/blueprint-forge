@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET\n                 failed_logins = CASE WHEN failed_logins + 1 >= $2 THEN 0 ELSE failed_logins + 1 END,\n                 locked_until = CASE WHEN failed_logins + 1 >= $2 THEN now() + $3 ELSE locked_until END\n             WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Interval"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "616a86a15f3268228d60a890753d84db908a0ec9a42cf49bdd429c972975144d"
+}

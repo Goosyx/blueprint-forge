@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_preferences SET rate_unit = $2, analysis_defaults = $3, generator_defaults = $4,\n                                    updated_at = now()\n         WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a84c059c665e706931c6ba09d2b5fa68d5c8f63775945150e5f40bdcbbab99de"
+}

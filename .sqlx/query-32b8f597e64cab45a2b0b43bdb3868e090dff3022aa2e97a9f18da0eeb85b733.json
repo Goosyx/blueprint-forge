@@ -1,0 +1,114 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, title, description, is_book, blueprint_count, entity_count, created_at, updated_at\n         FROM blueprints WHERE user_id = $1 AND ($2::uuid IS NULL OR id < $2)\n         ORDER BY id DESC LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "is_book",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "is_book"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "blueprint_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "blueprint_count"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "entity_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "entity_count"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "blueprints",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "32b8f597e64cab45a2b0b43bdb3868e090dff3022aa2e97a9f18da0eeb85b733"
+}

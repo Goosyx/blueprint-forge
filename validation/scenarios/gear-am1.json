@@ -1,0 +1,27 @@
+{
+  "id": "gear-am1",
+  "research": "all",
+  "warmup_ticks": 600,
+  "measure_ticks": 3600,
+  "measure": ["iron-gear-wheel", "iron-plate"],
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "label": "gear-am1",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "assembling-machine-1", "position": { "x": 1.5, "y": 1.5 }, "recipe": "iron-gear-wheel" },
+        { "entity_number": 2, "name": "fast-inserter", "position": { "x": 1.5, "y": -0.5 }, "direction": 0 },
+        { "entity_number": 3, "name": "fast-inserter", "position": { "x": 1.5, "y": 3.5 }, "direction": 0 },
+        { "entity_number": 4, "name": "small-electric-pole", "position": { "x": 3.5, "y": 1.5 } }
+      ]
+    }
+  },
+  "points": [
+    { "kind": "source", "x": 1.5, "y": -1.5, "items": ["iron-plate"] },
+    { "kind": "sink", "x": 1.5, "y": 4.5 }
+  ],
+  "expect": {
+    "iron-gear-wheel": { "produced_per_second": 1.0, "tolerance": 0.01 }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "refinery-basic",
+  "research": "all",
+  "warmup_ticks": 1200,
+  "measure_ticks": 3600,
+  "measure": ["petroleum-gas", "crude-oil"],
+  "compare": true,
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "oil-refinery", "position": { "x": 2.5, "y": 2.5 }, "recipe": "basic-oil-processing" },
+        { "entity_number": 2, "name": "medium-electric-pole", "position": { "x": 5.5, "y": 2.5 } }
+      ]
+    }
+  },
+  "points": [
+    { "kind": "fluid_source", "x": 1.5, "y": 5.5, "fluid": "crude-oil" },
+    { "kind": "fluid_source", "x": 3.5, "y": 5.5, "fluid": "crude-oil" },
+    { "kind": "fluid_sink", "x": 0.5, "y": -0.5, "fluid": "petroleum-gas" },
+    { "kind": "fluid_sink", "x": 2.5, "y": -0.5, "fluid": "petroleum-gas" },
+    { "kind": "fluid_sink", "x": 4.5, "y": -0.5, "fluid": "petroleum-gas" }
+  ],
+  "expect": { "petroleum-gas": { "produced_per_second": 9.0, "tolerance": 0.01 } }
+}

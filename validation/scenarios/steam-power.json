@@ -1,0 +1,29 @@
+{
+  "id": "steam-power",
+  "research": "all",
+  "warmup_ticks": 3600,
+  "measure_ticks": 3600,
+  "measure": ["steam"],
+  "compare": true,
+  "power": "load",
+  "prefuel": "coal",
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "boiler", "position": { "x": 1.5, "y": 1.0 } },
+        { "entity_number": 2, "name": "steam-engine", "position": { "x": 1.5, "y": -2.5 } },
+        { "entity_number": 3, "name": "steam-engine", "position": { "x": 1.5, "y": -7.5 } },
+        { "entity_number": 4, "name": "inserter", "position": { "x": 2.5, "y": 2.5 }, "direction": 8 },
+        { "entity_number": 5, "name": "medium-electric-pole", "position": { "x": 3.5, "y": 0.5 } },
+        { "entity_number": 6, "name": "medium-electric-pole", "position": { "x": 3.5, "y": -6.5 } }
+      ],
+      "wires": [[5, 5, 6, 5]]
+    }
+  },
+  "points": [
+    { "kind": "fluid_source", "x": -0.5, "y": 1.5, "fluid": "water" },
+    { "kind": "source", "x": 2.5, "y": 3.5, "items": ["coal"] }
+  ]
+}

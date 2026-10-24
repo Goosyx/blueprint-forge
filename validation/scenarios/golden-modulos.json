@@ -1,0 +1,11 @@
+{
+  "id": "golden-modulos",
+  "blueprint_file": "golden/01-modulos.txt",
+  "research": "all",
+  "warmup_ticks": 60,
+  "measure_ticks": 60,
+  "measure": [],
+  "compare": true,
+  "compare_bonuses_only": true,
+  "power": "cover"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "bf-validator",
+  "version": "0.1.0",
+  "title": "blueprint-forge validator",
+  "author": "Sergio Murilo",
+  "description": "Builds a blueprint on a lab surface, feeds its inputs and measures the real production. Used only by the automated tests of blueprint-forge.",
+  "factorio_version": "2.1",
+  "dependencies": ["base"]
+}

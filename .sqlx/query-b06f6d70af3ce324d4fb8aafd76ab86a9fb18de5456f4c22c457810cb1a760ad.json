@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_usage SET projects = GREATEST(projects - 1, 0), updated_at = now() WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b06f6d70af3ce324d4fb8aafd76ab86a9fb18de5456f4c22c457810cb1a760ad"
+}

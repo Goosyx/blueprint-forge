@@ -1,0 +1,80 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "tools/*"]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Goosyx/blueprint-forge"
+publish = false
+
+[workspace.dependencies]
+# PT: Crates internas do workspace.
+# EN: Internal workspace crates.
+bf-data = { path = "crates/bf-data" }
+bf-blueprint = { path = "crates/bf-blueprint" }
+bf-world = { path = "crates/bf-world" }
+bf-calc = { path = "crates/bf-calc" }
+bf-sim = { path = "crates/bf-sim" }
+bf-analysis = { path = "crates/bf-analysis" }
+bf-gen = { path = "crates/bf-gen" }
+
+# PT: Dependências externas, com versões fixadas num lugar só.
+# EN: External dependencies, with versions pinned in a single place.
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["raw_value"] }
+thiserror = "2.0.21"
+flate2 = "1.1.10"
+base64 = "0.23.1"
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+sha2 = "0.11.1"
+hex = "0.4.3"
+axum = "0.8.9"
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread", "net", "signal", "time"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.7.1", features = ["fs", "limit", "timeout", "trace", "set-header", "compression-gzip"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+wasm-bindgen = "0.2.129"
+console_error_panic_hook = "0.1.7"
+insta = { version = "1.49.0", features = ["json"] }
+proptest = "1.12.0"
+microlp = "0.6.0"
+dhat = "0.3.3"
+sqlx = { version = "0.9.0", default-features = false, features = ["postgres", "runtime-tokio", "tls-none", "macros", "migrate", "uuid", "time", "json", "derive"] }
+argon2 = "0.6.0"
+rand = "0.10.3"
+uuid = { version = "1.28.0", features = ["v7", "serde"] }
+time = { version = "0.3.55", features = ["serde"] }
+governor = "0.10.4"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+# PT: Dado vindo de fora nunca pode derrubar o programa: nada de unwrap, expect ou
+#     indexação que entra em pânico. Nos testes isso é liberado pelo clippy.toml.
+# EN: External data must never crash the program: no unwrap, expect or panicking
+#     indexing. Tests are exempted through clippy.toml.
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"
+
+[profile.release]
+# PT: Mantém a checagem de overflow também na versão final.
+# EN: Keeps overflow checks enabled in release builds too.
+overflow-checks = true
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1

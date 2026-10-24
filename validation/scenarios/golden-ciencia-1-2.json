@@ -1,0 +1,10 @@
+{
+  "id": "golden-ciencia-1-2",
+  "blueprint_file": "golden/07-ciencia1-2.txt",
+  "research": "all",
+  "warmup_ticks": 72000,
+  "measure_ticks": 7200,
+  "measure": ["automation-science-pack", "logistic-science-pack", "iron-gear-wheel", "electronic-circuit"],
+  "compare": true,
+  "auto_belts": true
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE projects SET name = COALESCE($3, name),\n                             description = CASE WHEN $4::boolean THEN $5 ELSE description END,\n                             updated_at = now()\n         WHERE id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "95f0e1b3e47dd3c88b338e8d8f33bc2679329d4708c69f6b9f9dab1d1771c73e"
+}

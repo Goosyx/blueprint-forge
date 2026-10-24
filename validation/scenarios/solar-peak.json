@@ -1,0 +1,21 @@
+{
+  "id": "solar-peak",
+  "research": "none",
+  "warmup_ticks": 600,
+  "measure_ticks": 3600,
+  "measure": [],
+  "compare": true,
+  "power": "load",
+  "blueprint_json": {
+    "blueprint": {
+      "item": "blueprint",
+      "version": 562954249895936,
+      "entities": [
+        { "entity_number": 1, "name": "solar-panel", "position": { "x": 1.5, "y": 1.5 } },
+        { "entity_number": 2, "name": "solar-panel", "position": { "x": 4.5, "y": 1.5 } },
+        { "entity_number": 3, "name": "solar-panel", "position": { "x": 1.5, "y": 4.5 } },
+        { "entity_number": 4, "name": "medium-electric-pole", "position": { "x": 3.5, "y": 3.5 } }
+      ]
+    }
+  }
+}
