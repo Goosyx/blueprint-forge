@@ -25,7 +25,7 @@ pub const DEFAULT_MAXIMUM_PRODUCTIVITY: f64 = 3.0;
 
 /// PT: Versão do formato do `gamedata.json`. Muda sempre que um campo muda de sentido.
 /// EN: Version of the `gamedata.json` format. It changes whenever a field changes meaning.
-pub const FORMAT_VERSION: u32 = 2;
+pub const FORMAT_VERSION: u32 = 3;
 
 /// PT: Todos os dados de uma versão do jogo que o projeto usa.
 /// EN: All the data of one game version that the project uses.
@@ -243,6 +243,10 @@ pub struct Entity {
     /// EN: Nominal consumption while working, when the entity has one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub energy_usage_w: Option<f64>,
+    /// PT: Caixas de fluido com as conexões de cano (máquinas, canos, bombas, caldeiras...).
+    /// EN: Fluid boxes with their pipe connections (machines, pipes, pumps, boilers...).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fluid_boxes: Vec<FluidBox>,
     pub kind: EntityKind,
 }
 
@@ -327,8 +331,6 @@ pub enum EntityKind {
         uses_beacon_effects: bool,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         fixed_recipe: Option<String>,
-        #[serde(default, skip_serializing_if = "Vec::is_empty")]
-        fluid_boxes: Vec<FluidBox>,
     },
     Beacon {
         supply_area_distance: f64,

@@ -384,6 +384,7 @@ fn entity(name: &str, prototype: &str, proto: &Object) -> Result<Entity> {
         placed_by: Vec::new(),
         energy_source,
         energy_usage_w,
+        fluid_boxes: fluid_boxes(proto)?,
         kind: entity_kind(prototype, proto)?,
     })
 }
@@ -484,12 +485,6 @@ fn entity_kind(prototype: &str, proto: &Object) -> Result<EntityKind> {
             let receiver = proto.get("effect_receiver").and_then(Value::as_object);
             let receiver_flag =
                 |key: &str| receiver.and_then(|r| bool_field(r, key)).unwrap_or(true);
-            let mut fluid_boxes = Vec::new();
-            for fluid_box in list(proto.get("fluid_boxes")) {
-                if let Some(fluid_box) = fluid_box.as_object() {
-                    fluid_boxes.push(parse_fluid_box(fluid_box)?);
-                }
-            }
             EntityKind::CraftingMachine {
                 crafting_speed: f64_field(proto, "crafting_speed").unwrap_or(1.0),
                 crafting_categories: strings("crafting_categories"),
@@ -500,7 +495,6 @@ fn entity_kind(prototype: &str, proto: &Object) -> Result<EntityKind> {
                 fixed_recipe: str_field(proto, "fixed_recipe")
                     .filter(|s| !s.is_empty())
                     .map(str::to_owned),
-                fluid_boxes,
             }
         }
         "beacon" => EntityKind::Beacon {
@@ -601,6 +595,27 @@ fn entity_kind(prototype: &str, proto: &Object) -> Result<EntityKind> {
         _ => EntityKind::Other,
     };
     Ok(kind)
+}
+
+// PT: Caixas de fluido de qualquer entidade, na ordem do jogo: a lista `fluid_boxes` das
+//     máquinas (o índice casa com o `fluidbox_index` das receitas) e depois as caixas avulsas
+//     (canos, bombas, tanques; na caldeira, a entrada de água e a saída de vapor).
+// EN: Fluid boxes of any entity, in game order: the machines' `fluid_boxes` list (the index
+//     matches the recipes' `fluidbox_index`) and then the single boxes (pipes, pumps, tanks;
+//     for the boiler, the water input and the steam output).
+fn fluid_boxes(proto: &Object) -> Result<Vec<FluidBox>> {
+    let mut boxes = Vec::new();
+    for fluid_box in list(proto.get("fluid_boxes")) {
+        if let Some(fluid_box) = fluid_box.as_object() {
+            boxes.push(parse_fluid_box(fluid_box)?);
+        }
+    }
+    for key in ["fluid_box", "input_fluid_box", "output_fluid_box"] {
+        if let Some(fluid_box) = proto.get(key).and_then(Value::as_object) {
+            boxes.push(parse_fluid_box(fluid_box)?);
+        }
+    }
+    Ok(boxes)
 }
 
 fn parse_fluid_box(fluid_box: &Object) -> Result<FluidBox> {
@@ -849,16 +864,18 @@ mod tests {
             EntityKind::CraftingMachine {
                 crafting_speed,
                 uses_module_effects,
-                fluid_boxes,
                 ..
             } => {
                 assert_eq!(*crafting_speed, 0.75);
                 assert!(*uses_module_effects);
                 assert_eq!(
-                    fluid_boxes[0].pipe_connections[0].position,
+                    machine.fluid_boxes[0].pipe_connections[0].position,
                     Some([0.0, -1.0])
                 );
-                assert_eq!(fluid_boxes[0].pipe_connections[0].connection_type, "normal");
+                assert_eq!(
+                    machine.fluid_boxes[0].pipe_connections[0].connection_type,
+                    "normal"
+                );
             }
             other => panic!("tipo errado / wrong kind: {other:?}"),
         }

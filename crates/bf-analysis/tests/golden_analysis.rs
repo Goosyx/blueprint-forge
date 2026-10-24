@@ -78,6 +78,13 @@ fn every_golden_is_fully_understood() {
             "{name}: {:?}",
             analysis.world.warnings
         );
+        // PT: Sankey sem ciclo (o d3 e o layout da interface exigem grafo acíclico).
+        // EN: Sankey without cycles (d3 and the interface layout require an acyclic graph).
+        let sankey = analysis.sankey.as_ref().expect("sankey");
+        assert!(
+            acyclic(sankey),
+            "{name}: ciclo no sankey / cycle in the sankey"
+        );
         checked += 1;
     }
     assert!(
@@ -145,4 +152,24 @@ fn beacon_reach_matches_the_golden_layout() {
     assert_eq!(row, vec![4, 6, 6, 6, 4]);
     // PT: Beacon vazio ao lado de um cheio. EN: Empty beacon next to a full one.
     assert_eq!(beacons_at(39.5, -71.5), 2);
+}
+
+fn acyclic(sankey: &bf_analysis::sankey::Sankey) -> bool {
+    let count = sankey.nodes.len();
+    let mut incoming = vec![0usize; count];
+    for link in &sankey.links {
+        incoming[link.target] += 1;
+    }
+    let mut ready: Vec<usize> = (0..count).filter(|i| incoming[*i] == 0).collect();
+    let mut seen = 0;
+    while let Some(node) = ready.pop() {
+        seen += 1;
+        for link in sankey.links.iter().filter(|l| l.source == node) {
+            incoming[link.target] -= 1;
+            if incoming[link.target] == 0 {
+                ready.push(link.target);
+            }
+        }
+    }
+    seen == count
 }

@@ -41,7 +41,8 @@ script.on_event(defines.events.on_tick, function()
       return
     end
     if test.auto_belts then
-      local detected, found, reason = pcall(feed.detect, game.surfaces[SURFACE], game.forces.player)
+      local detected, found, reason =
+        pcall(feed.detect, game.surfaces[SURFACE], game.forces.player, built.offset, test.drain_chests)
       if not detected or not found then
         finish({ ok = false, error = "feed_failed", detail = tostring(reason or found) })
         return

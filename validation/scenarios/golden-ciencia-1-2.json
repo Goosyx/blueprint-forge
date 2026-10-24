@@ -4,7 +4,13 @@
   "research": "all",
   "warmup_ticks": 72000,
   "measure_ticks": 7200,
-  "measure": ["automation-science-pack", "logistic-science-pack", "iron-gear-wheel", "electronic-circuit"],
+  "measure": [
+    "automation-science-pack",
+    "logistic-science-pack",
+    "iron-gear-wheel",
+    "electronic-circuit"
+  ],
   "compare": true,
-  "auto_belts": true
+  "auto_belts": true,
+  "sim": true
 }

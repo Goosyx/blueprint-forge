@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Engine, initSync } from './pkg/bf_wasm.js';
-import type { Analysis } from '../types';
+import type { Analysis, FlowReport } from '../types';
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 // PT: A versão vem do mesmo arquivo que os scripts usam. EN: The version comes from the same file the scripts use.
@@ -19,7 +19,7 @@ const gameData = process.env.BF_GAME_ASSETS
 const fixture = here('../../../../crates/bf-blueprint/tests/fixtures/old_project_green_book.txt');
 
 const SYNTHETIC = JSON.stringify({
-  format_version: 2,
+  format_version: 3,
   game_version: 'test',
   items: {},
   fluids: {},
@@ -76,6 +76,20 @@ describe('wasm engine', () => {
     const fixed = JSON.parse(engine.analyze(text, last, options)) as Analysis;
     const machine = fixed.report.machines.find((m) => m.entity_number === furnace.entity_number);
     expect(machine?.recipe).toBe('iron-plate');
+  });
+
+  it('returns the flow simulation, bottlenecks and sankey', () => {
+    if (!existsSync(gameData)) return;
+    const text = readFileSync(fixture, 'utf8');
+    const analysis = JSON.parse(engine.analyze(text, 0, '{}')) as Analysis;
+    expect(analysis.flow).toBeDefined();
+    expect(typeof analysis.flow!.converged).toBe('boolean');
+    expect(analysis.flow!.machines.length).toBe(analysis.report.machines.length);
+    expect(typeof analysis.efficiency!.efficiency).toBe('number');
+    expect(Array.isArray(analysis.sankey!.links)).toBe(true);
+    const tick = JSON.parse(engine.simulate(text, 0, '{}', 600, 600)) as FlowReport;
+    expect(tick.machines.length).toBe(analysis.report.machines.length);
+    expect(typeof tick.produced).toBe('object');
   });
 
   it('reports errors as a {code, message} JSON', () => {

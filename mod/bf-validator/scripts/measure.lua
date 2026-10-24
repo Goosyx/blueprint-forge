@@ -24,8 +24,28 @@ function measure.snapshot(test, surface_name)
     network = pole.electric_network_statistics
     break
   end
+  -- PT: Itens em cada baú comum (não infinito), por posição na blueprint, e o total apagado em
+  --     cada saída de esteira.
+  -- EN: Items in each regular (non-infinity) chest, by blueprint position, and the total deleted
+  --     at each belt output.
+  local offset = storage.built and storage.built.offset or { x = 0, y = 0 }
+  local chests = {}
+  for _, chest in pairs(surface.find_entities_filtered({ type = { "container", "logistic-container" } })) do
+    local inventory = chest.get_inventory(defines.inventory.chest)
+    if inventory then
+      local key = (chest.position.x - offset.x) .. "," .. (chest.position.y - offset.y)
+      local counted = storage.feed and storage.feed.counted[key] or 0
+      chests[key] = inventory.get_item_count() + counted
+    end
+  end
+  local sunk = {}
+  for key, value in pairs(storage.feed and storage.feed.sunk or {}) do
+    sunk[key] = value
+  end
   return {
     items = counts,
+    chests = chests,
+    sunk = sunk,
     electric_input = network and network.input_counts or {},
     electric_output = network and network.output_counts or {},
     pollution = game.get_pollution_statistics(surface).input_counts,
@@ -58,6 +78,8 @@ function measure.report(test, first, last, ticks)
     electric_input_w = per_second(first.electric_input, last.electric_input),
     electric_output_w = per_second(first.electric_output, last.electric_output),
     pollution_per_second = per_second(first.pollution, last.pollution),
+    chest_rates = per_second(first.chests, last.chests),
+    sink_rates = per_second(first.sunk, last.sunk),
     machines = measure.machines(test),
   }
 end

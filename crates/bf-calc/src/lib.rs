@@ -9,6 +9,7 @@ pub mod budget;
 pub mod effects;
 pub mod flows;
 pub mod generation;
+pub mod infer;
 pub mod lp;
 pub mod machines;
 pub mod power;
@@ -17,6 +18,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bf_blueprint::Blueprint;
 use bf_data::GameData;
+use bf_world::Topology;
 use bf_world::World;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +26,7 @@ pub use bom::BomLine;
 pub use budget::{Budget, CalcError};
 pub use flows::{ItemFlow, RecipeGroup};
 pub use generation::GenerationReport;
+pub use infer::{Confidence, Inference};
 pub use lp::{SteadyOptions, SteadyState};
 pub use machines::{MachineReport, RecipeSource};
 pub use power::PowerReport;
@@ -52,6 +55,22 @@ pub struct AnalysisOptions {
     pub exported: BTreeSet<String>,
     /// PT: Combustível das máquinas a queima (padrão: carvão). EN: Burner machine fuel (default: coal).
     pub fuel: Option<String>,
+    /// PT: Pesquisas de capacidade dos insersores (mudam a vazão na simulação de fluxo).
+    /// EN: Inserter capacity research (changes the throughput in the flow simulation).
+    #[serde(default)]
+    pub inserter_research: InserterResearch,
+}
+
+/// PT: Nível das pesquisas de capacidade dos insersores: nenhuma, ou todas (3 itens por mão nos
+///     comuns e 12 no bulk).
+/// EN: Inserter capacity research level: none, or all (3 items per hand for regular ones and 12
+///     for bulk).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InserterResearch {
+    None,
+    #[default]
+    All,
 }
 
 impl AnalysisOptions {
@@ -110,6 +129,11 @@ pub enum CalcWarning {
         entity_number: u64,
         recipe: String,
     },
+    /// PT: Entidade elétrica fora do alcance de qualquer poste: não funciona.
+    /// EN: Electric entity out of every pole's reach: it does not work.
+    Unpowered {
+        entity_number: u64,
+    },
 }
 
 /// PT: Relatório completo do cálculo de uma blueprint.
@@ -127,6 +151,8 @@ pub struct CalcReport {
     pub generation: GenerationReport,
     pub pollution_per_minute: f64,
     pub bill_of_materials: Vec<BomLine>,
+    /// PT: Receitas deduzidas das fornalhas. EN: Recipes inferred for the furnaces.
+    pub inferences: Vec<Inference>,
     pub warnings: Vec<CalcWarning>,
 }
 
@@ -140,10 +166,41 @@ pub fn calculate(
     world: &World,
     options: &AnalysisOptions,
 ) -> Result<CalcReport, CalcError> {
+    let topology = Topology::build(world, blueprint, data);
+    calculate_with(data, blueprint, world, &topology, options)
+}
+
+/// PT: Como `calculate`, com a topologia já montada (a análise reaproveita a mesma na simulação).
+/// EN: Like `calculate`, with the topology already built (the analysis reuses it in the simulation).
+pub fn calculate_with(
+    data: &GameData,
+    blueprint: &Blueprint,
+    world: &World,
+    topology: &Topology,
+    options: &AnalysisOptions,
+) -> Result<CalcReport, CalcError> {
     let mut budget = Budget::default();
     let fuel = options.fuel.as_deref().unwrap_or("coal");
     let mut warnings = Vec::new();
-    let machines = machines::machines(data, blueprint, world, options, &mut warnings, &mut budget)?;
+    let coverage = &topology.power;
+    let inferences = infer::infer(data, blueprint, world, topology);
+    // PT: Escolha do usuário vale mais que a dedução. EN: The user's choice beats the inference.
+    let mut choices: BTreeMap<u64, (String, RecipeSource)> = inferences
+        .iter()
+        .map(|i| (i.entity_number, (i.recipe.clone(), RecipeSource::Inferred)))
+        .collect();
+    for (number, recipe) in &options.recipe_overrides {
+        choices.insert(*number, (recipe.clone(), RecipeSource::Override));
+    }
+    let machines = machines::machines(
+        data,
+        blueprint,
+        world,
+        coverage,
+        &choices,
+        &mut warnings,
+        &mut budget,
+    )?;
     let groups = flows::recipe_groups(data, &machines, fuel);
 
     let steady_state = lp::steady_state(
@@ -158,7 +215,7 @@ pub fn calculate(
     let nominal = flows::balance(data, &groups, &full);
     let steady = flows::balance(data, &groups, &steady_state.utilization);
 
-    let power = power::power(data, world, &machines, &steady_state.utilization);
+    let power = power::power(data, world, coverage, &machines, &steady_state.utilization);
     let generation = generation::generation(data, world, fuel, &mut budget)?;
     let crafting_pollution: f64 = groups
         .iter()
@@ -184,6 +241,7 @@ pub fn calculate(
             + other_pollution(data, world),
         generation,
         bill_of_materials: bom::bill_of_materials(data, blueprint),
+        inferences,
         warnings,
     })
 }

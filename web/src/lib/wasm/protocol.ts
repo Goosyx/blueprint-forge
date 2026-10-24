@@ -4,7 +4,16 @@ import type { ErrorBody } from '../types';
 
 export type WorkerRequest =
   | { type: 'init'; gameData: string }
-  | { type: 'analyze'; id: number; text: string; selected: number; options: string };
+  | { type: 'analyze'; id: number; text: string; selected: number; options: string }
+  | {
+      type: 'simulate';
+      id: number;
+      text: string;
+      selected: number;
+      options: string;
+      warmup: number;
+      measure: number;
+    };
 
 export type WorkerResponse =
   | { type: 'ready'; gameVersion: string }

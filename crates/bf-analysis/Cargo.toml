@@ -11,6 +11,7 @@ bf-data.workspace = true
 bf-blueprint.workspace = true
 bf-world.workspace = true
 bf-calc.workspace = true
+bf-sim.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 

@@ -1,0 +1,552 @@
+[
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "none",
+    "items_per_second": 0.7875
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "none",
+    "items_per_second": 0.8583333333333332
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "none",
+    "items_per_second": 1.25
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 0.8583333333333332
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 0.9083333333333334
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 1.2
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 2.725
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 2.725
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 0.7875
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 0.8583333333333332
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 1.25
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 0.8541666666666666
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 0.9083333333333334
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 1.2
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 2.7291666666666665
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 2.7291666666666665
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 0.7916666666666666
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 0.8583333333333332
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 1.25
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 0.8541666666666666
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 0.9083333333333334
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 1.2
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 2.725
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 2.725
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 0.7916666666666666
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 0.8541666666666666
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 1.25
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "none",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "all",
+    "items_per_second": 2.3625
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "all",
+    "items_per_second": 2.575
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "all",
+    "items_per_second": 3.75
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "all",
+    "items_per_second": 7.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "chest",
+    "research": "all",
+    "items_per_second": 30.0
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 2.05
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 2.225
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 3.325
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 7.5
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 15.0
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 2.15
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 2.3125
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 3.2125
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 5.625
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "transport-belt",
+    "research": "all",
+    "items_per_second": 6.920833333333333
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 2.0625
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 2.225
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 3.4
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 6.425
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 14.7
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 2.25
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 2.4291666666666667
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 3.4625
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 6.4333333333333345
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "fast-transport-belt",
+    "research": "all",
+    "items_per_second": 11.25
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 2.25
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 3.4
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 6.6625
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "belt",
+    "to": "chest",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 17.15
+  },
+  {
+    "inserter": "burner-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 2.308333333333333
+  },
+  {
+    "inserter": "inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 2.5
+  },
+  {
+    "inserter": "long-handed-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 3.6
+  },
+  {
+    "inserter": "fast-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 6.925
+  },
+  {
+    "inserter": "bulk-inserter",
+    "from": "chest",
+    "to": "belt",
+    "belt": "express-transport-belt",
+    "research": "all",
+    "items_per_second": 14.4
+  }
+]

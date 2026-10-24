@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 
 use bf_data::{EnergySourceKind, EntityKind, GameData};
 use bf_world::World;
+use bf_world::power::PowerCoverage;
 use serde::Serialize;
 
 use crate::machines::Machine;
@@ -30,6 +31,7 @@ pub struct PowerReport {
 pub(crate) fn power(
     data: &GameData,
     world: &World,
+    coverage: &PowerCoverage,
     machines: &[Machine<'_>],
     utilization: &BTreeMap<String, f64>,
 ) -> PowerReport {
@@ -63,7 +65,11 @@ pub(crate) fn power(
         );
     }
 
-    for placed in &world.entities {
+    for (slot, placed) in world.entities.iter().enumerate() {
+        // PT: Sem poste não há consumo. EN: Without a pole there is no consumption.
+        if !coverage.powered(slot) {
+            continue;
+        }
         let Some(entity) = data.entities.get(&placed.name) else {
             continue;
         };

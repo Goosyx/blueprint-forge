@@ -5,7 +5,14 @@
 //!     grid and the warnings (unknown entity, overlap). The grid is never a dense matrix: it only
 //!     keeps occupied tiles, with a count cap.
 
+pub mod belts;
+pub mod dir;
+pub mod fluids;
 pub mod footprint;
+pub mod inserters;
+pub mod markers;
+pub mod power;
+mod union;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -117,6 +124,81 @@ pub struct World {
     /// PT: Tile → posição em `entities`. Chaves e valores de 32 bits para caber ~20 bytes por tile.
     /// EN: Tile → position in `entities`. 32-bit keys and values to fit ~20 bytes per tile.
     occupancy: HashMap<(i32, i32), u32>,
+}
+
+/// PT: Topologia completa: esteiras, insersores, energia e fluidos, mais os índices que as
+///     simulações e a dedução de fornalhas usam (montados uma vez, em custo linear).
+/// EN: Full topology: belts, inserters, power and fluids, plus the indexes the simulations and
+///     the furnace inference use (built once, at linear cost).
+#[derive(Debug, Clone, Serialize)]
+pub struct Topology {
+    pub belts: belts::BeltNetwork,
+    pub inserters: Vec<inserters::InserterLink>,
+    pub power: power::PowerCoverage,
+    pub fluids: fluids::FluidNetworks,
+    /// PT: Cabeça de esteira → itens marcados por combinador. EN: Belt head → items marked by a combinator.
+    #[serde(skip)]
+    pub markers: std::collections::BTreeMap<usize, Vec<String>>,
+    /// PT: Ordem das esteiras de quem manda para quem recebe. EN: Belt order from senders to receivers.
+    #[serde(skip)]
+    pub order: Vec<usize>,
+    /// PT: Tile → insersores que pegam nele. EN: Tile → inserters picking from it.
+    #[serde(skip)]
+    pub pickers_by_tile: HashMap<usize, Vec<usize>>,
+    /// PT: Tile → insersores que soltam nele. EN: Tile → inserters dropping onto it.
+    #[serde(skip)]
+    pub droppers_by_tile: HashMap<usize, Vec<usize>>,
+    /// PT: Entidade → insersores que soltam nela. EN: Entity → inserters dropping into it.
+    #[serde(skip)]
+    pub feeders_of: HashMap<usize, Vec<usize>>,
+    /// PT: Entidade → insersores que pegam dela. EN: Entity → inserters picking from it.
+    #[serde(skip)]
+    pub takers_of: HashMap<usize, Vec<usize>>,
+}
+
+impl Topology {
+    /// PT: Monta a topologia do mundo. Custo linear no número de entidades.
+    /// EN: Builds the world's topology. Linear cost in the number of entities.
+    pub fn build(world: &World, blueprint: &Blueprint, data: &GameData) -> Self {
+        let belts = belts::BeltNetwork::build(world, blueprint, data);
+        let inserters = inserters::link(world, blueprint, data, &belts);
+        let mut pickers_by_tile: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut droppers_by_tile: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut feeders_of: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut takers_of: HashMap<usize, Vec<usize>> = HashMap::new();
+        for (k, link) in inserters.iter().enumerate() {
+            match link.pickup {
+                inserters::Endpoint::Belt { tile, .. } => {
+                    pickers_by_tile.entry(tile).or_default().push(k)
+                }
+                inserters::Endpoint::Entity { entity } => {
+                    takers_of.entry(entity).or_default().push(k)
+                }
+                inserters::Endpoint::Nothing => {}
+            }
+            match link.drop {
+                inserters::Endpoint::Belt { tile, .. } => {
+                    droppers_by_tile.entry(tile).or_default().push(k)
+                }
+                inserters::Endpoint::Entity { entity } => {
+                    feeders_of.entry(entity).or_default().push(k)
+                }
+                inserters::Endpoint::Nothing => {}
+            }
+        }
+        Self {
+            markers: markers::marked_heads(world, blueprint, data, &belts),
+            order: belts.order(),
+            inserters,
+            power: power::PowerCoverage::build(world, blueprint, data),
+            fluids: fluids::FluidNetworks::build(world, blueprint, data),
+            belts,
+            pickers_by_tile,
+            droppers_by_tile,
+            feeders_of,
+            takers_of,
+        }
+    }
 }
 
 impl World {
@@ -271,6 +353,7 @@ mod tests {
                     placed_by: Vec::new(),
                     energy_source: None,
                     energy_usage_w: None,
+                    fluid_boxes: Vec::new(),
                     kind: EntityKind::Other,
                 },
             );

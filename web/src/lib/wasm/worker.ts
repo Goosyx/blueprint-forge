@@ -37,7 +37,7 @@ function expectedError(error: unknown): { code: string; message?: string } | nul
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
-  const id = request.type === 'analyze' ? request.id : undefined;
+  const id = request.type === 'init' ? undefined : request.id;
   try {
     if (request.type === 'init') {
       await init({ module_or_path: wasmUrl });
@@ -49,6 +49,19 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
         type: 'result',
         id: request.id,
         json: engine.analyze(request.text, request.selected, request.options),
+      });
+    } else if (request.type === 'simulate') {
+      if (!engine) throw new Error(JSON.stringify({ code: 'engine.not_ready' }));
+      reply({
+        type: 'result',
+        id: request.id,
+        json: engine.simulate(
+          request.text,
+          request.selected,
+          request.options,
+          request.warmup,
+          request.measure,
+        ),
       });
     }
   } catch (error) {

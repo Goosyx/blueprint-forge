@@ -10,9 +10,13 @@
 use bf_blueprint::{
     Blueprint, BlueprintBook, BlueprintString, DecodeError, Limits, Warning, decode,
 };
-use bf_calc::{AnalysisOptions, CalcError, CalcReport, calculate};
+pub mod bottlenecks;
+pub mod sankey;
+
+use bf_calc::{AnalysisOptions, CalcError, CalcReport, calculate_with};
 use bf_data::GameData;
-use bf_world::{World, WorldError};
+use bf_sim::{FlowReport, SimError};
+use bf_world::{Topology, World, WorldError};
 use serde::Serialize;
 
 /// PT: Erro da análise, com código estável para tradução.
@@ -29,6 +33,8 @@ pub enum AnalysisError {
     Options(&'static str),
     #[error("blueprint inexistente no livro / blueprint not found in the book: {0}")]
     NoSuchBlueprint(usize),
+    #[error(transparent)]
+    Sim(#[from] SimError),
 }
 
 impl AnalysisError {
@@ -41,6 +47,7 @@ impl AnalysisError {
             Self::Calc(error) => error.code(),
             Self::Options(code) => code,
             Self::NoSuchBlueprint(_) => "analysis.no_such_blueprint",
+            Self::Sim(error) => error.code(),
         }
     }
 }
@@ -95,6 +102,14 @@ pub struct Analysis {
     pub selected: usize,
     pub world: World,
     pub report: CalcReport,
+    /// PT: Simulação em regime estável (ausente se a blueprint for grande demais para simular).
+    /// EN: Steady-state simulation (absent if the blueprint is too large to simulate).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flow: Option<FlowReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub efficiency: Option<bottlenecks::Efficiency>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sankey: Option<sankey::Sankey>,
 }
 
 /// PT: Decodifica, monta o mundo da blueprint escolhida e calcula com as opções do usuário.
@@ -129,7 +144,24 @@ pub fn analyze(
         .copied()
         .ok_or(AnalysisError::NoSuchBlueprint(selected))?;
     let world = World::build(blueprint, data)?;
-    let report = calculate(data, blueprint, &world, options)?;
+    let topology = Topology::build(&world, blueprint, data);
+    let report = calculate_with(data, blueprint, &world, &topology, options)?;
+    let fuel = options.fuel.as_deref().unwrap_or("coal");
+    let input = bf_sim::build(
+        data,
+        &world,
+        &topology,
+        &report,
+        options.inserter_research,
+        fuel,
+    );
+    // PT: Blueprint grande demais para simular: a análise segue sem fluxo.
+    // EN: Blueprint too large to simulate: the analysis goes on without flow.
+    let flow = bf_sim::steady::simulate(&input).ok();
+    let efficiency = flow
+        .as_ref()
+        .map(|f| bottlenecks::classify(&world, &topology, &report, f));
+    let sankey = flow.as_ref().map(|f| sankey::build(data, &report, f));
 
     Ok(Analysis {
         tree,
@@ -138,7 +170,51 @@ pub fn analyze(
         selected,
         world,
         report,
+        flow,
+        efficiency,
+        sankey,
     })
+}
+
+/// PT: Simulação tick a tick da blueprint escolhida, sob demanda (bem mais cara que a análise).
+///     `progress` recebe de 0 a 1 e cancela devolvendo `false`.
+/// EN: Tick-by-tick simulation of the chosen blueprint, on demand (much more expensive than the
+///     analysis). `progress` receives 0 to 1 and cancels by returning `false`.
+pub fn simulate_ticks(
+    data: &GameData,
+    text: &str,
+    selected: usize,
+    options: &AnalysisOptions,
+    limits: &Limits,
+    ticks: &bf_sim::tick::TickOptions,
+    progress: &mut dyn FnMut(f64) -> bool,
+) -> Result<FlowReport, AnalysisError> {
+    options.validate().map_err(AnalysisError::Options)?;
+    let decoded = decode(text, limits)?;
+    let mut ordered = Vec::new();
+    match &decoded.content {
+        BlueprintString::Blueprint(blueprint) => ordered.push(blueprint),
+        BlueprintString::Book(book) => {
+            book_tree(book, &mut ordered);
+        }
+    }
+    let blueprint = ordered
+        .get(selected)
+        .copied()
+        .ok_or(AnalysisError::NoSuchBlueprint(selected))?;
+    let world = World::build(blueprint, data)?;
+    let topology = Topology::build(&world, blueprint, data);
+    let report = calculate_with(data, blueprint, &world, &topology, options)?;
+    let fuel = options.fuel.as_deref().unwrap_or("coal");
+    let input = bf_sim::build(
+        data,
+        &world,
+        &topology,
+        &report,
+        options.inserter_research,
+        fuel,
+    );
+    Ok(bf_sim::tick::simulate_with(&input, ticks, progress)?)
 }
 
 fn summary(blueprint: &Blueprint) -> BlueprintSummary {

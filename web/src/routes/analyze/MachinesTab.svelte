@@ -74,7 +74,7 @@
             >{/if}
         </td>
         <td>
-          {#if machine.recipe && machine.recipe_source !== 'override'}
+          {#if machine.recipe && (machine.recipe_source === 'blueprint' || machine.recipe_source === 'fixed')}
             <span class="item">
               <ItemIcon kind="recipe" name={machine.recipe} />
               {recipeName($gameLocale, machine.recipe)}
@@ -91,6 +91,10 @@
                 <option value={recipe}>{recipeName($gameLocale, recipe)}</option>
               {/each}
             </select>
+            {#if machine.recipe_source === 'inferred'}<span
+                class="badge"
+                title={$t('machines.inferred_hint')}>{$t('machines.inferred')}</span
+              >{/if}
           {/if}
         </td>
         <td class="num">{formatPercent($language, machine.effect.speed)}</td>
@@ -126,5 +130,13 @@
   }
   .muted {
     color: var(--muted);
+  }
+  .badge {
+    margin-left: 6px;
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    color: var(--accent);
   }
 </style>

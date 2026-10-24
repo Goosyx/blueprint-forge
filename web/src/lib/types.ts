@@ -67,7 +67,7 @@ export interface MachineReport {
   entity_number: number;
   name: string;
   recipe?: string;
-  recipe_source?: 'blueprint' | 'override' | 'fixed';
+  recipe_source?: 'blueprint' | 'override' | 'fixed' | 'inferred';
   modules?: Record<string, number>;
   beacons: number;
   effect: Effect;
@@ -75,6 +75,7 @@ export interface MachineReport {
   power_w: number;
   drain_w: number;
   electric: boolean;
+  powered: boolean;
   pollution_per_minute: number;
 }
 
@@ -127,7 +128,8 @@ export interface BomLine {
 export type CalcWarning =
   | { code: 'no_recipe'; entity_number: number }
   | { code: 'unknown_recipe'; entity_number: number; recipe: string }
-  | { code: 'recipe_not_allowed'; entity_number: number; recipe: string };
+  | { code: 'recipe_not_allowed'; entity_number: number; recipe: string }
+  | { code: 'unpowered'; entity_number: number };
 
 export interface CalcReport {
   machines: MachineReport[];
@@ -139,7 +141,90 @@ export interface CalcReport {
   generation: GenerationReport;
   pollution_per_minute: number;
   bill_of_materials: BomLine[];
+  inferences: Inference[];
   warnings: CalcWarning[];
+}
+
+export interface Inference {
+  entity_number: number;
+  recipe: string;
+  confidence: 'high' | 'low';
+  alternatives?: string[];
+}
+
+export type Limit =
+  | { type: 'none' }
+  | { type: 'idle' }
+  | { type: 'input'; item: string }
+  | { type: 'output'; item: string };
+
+export interface MachineFlow {
+  entity_number: number;
+  crafts_per_second: number;
+  utilization: number;
+  limit: Limit;
+}
+
+export interface InserterFlow {
+  entity_number: number;
+  items_per_second: number;
+  capacity: number;
+  utilization: number;
+}
+
+export interface LaneFlow {
+  tile: number;
+  lane: number;
+  items_per_second: number;
+  capacity: number;
+}
+
+/** PT: Relatório de uma simulação de fluxo. EN: Report of one flow simulation. */
+export interface FlowReport {
+  machines: MachineFlow[];
+  inserters: InserterFlow[];
+  lanes: LaneFlow[];
+  produced: Record<string, number>;
+  drained: Record<string, number>;
+  rounds: number;
+  converged: boolean;
+}
+
+export type Cause =
+  | { type: 'ok' }
+  | { type: 'no_recipe' }
+  | { type: 'unpowered' }
+  | { type: 'missing_input'; item: string }
+  | { type: 'slow_inserter'; item: string; inserter: number }
+  | { type: 'lane_saturated'; item: string }
+  | { type: 'output_blocked'; item: string };
+
+export interface Bottleneck {
+  entity_number: number;
+  utilization: number;
+  cause: Cause;
+}
+
+export interface Efficiency {
+  efficiency: number;
+  machines: Bottleneck[];
+}
+
+export interface SankeyNode {
+  kind: 'item' | 'recipe';
+  name: string;
+  loop: boolean;
+}
+
+export interface SankeyLink {
+  source: number;
+  target: number;
+  per_second: number;
+}
+
+export interface Sankey {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
 }
 
 export interface Analysis {
@@ -149,6 +234,9 @@ export interface Analysis {
   selected: number;
   world: World;
   report: CalcReport;
+  flow?: FlowReport;
+  efficiency?: Efficiency;
+  sankey?: Sankey;
 }
 
 /** PT: Opções da análise (espelha `bf_calc::AnalysisOptions`). EN: Analysis options (mirrors `bf_calc::AnalysisOptions`). */
@@ -158,6 +246,7 @@ export interface AnalysisOptions {
   blocked_outputs?: string[];
   exported?: string[];
   fuel?: string | null;
+  inserter_research?: 'none' | 'all';
 }
 
 /** PT: Erro vindo do WASM ou da API. EN: Error coming from the WASM or the API. */

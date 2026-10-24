@@ -49,6 +49,8 @@ export class BlueprintScene {
   /** PT: Bloco de 32×32 tiles → entidades que o tocam. EN: 32×32 tile block → entities touching it. */
   private blocks = new Map<string, PlacedEntity[]>();
   private current: World | null = null;
+  /** PT: Número da entidade → utilização (0..1), para colorir as máquinas. EN: Entity number → utilization (0..1), to color machines. */
+  private overlay: Map<number, number> | null = null;
   private dragging: { x: number; y: number } | null = null;
   private ready = false;
   private resizeObserver: ResizeObserver | null = null;
@@ -92,8 +94,17 @@ export class BlueprintScene {
     if (this.current) this.show(this.current);
   }
 
+  /**
+   * PT: Liga (com um mapa de utilização) ou desliga (null) as cores de utilização das máquinas.
+   * EN: Turns machine utilization colors on (with a utilization map) or off (null).
+   */
+  setOverlay(overlay: Map<number, number> | null): void {
+    this.overlay = overlay;
+    if (this.current) this.show(this.current, false);
+  }
+
   /** PT: Desenha um mundo e enquadra a vista. EN: Draws a world and fits the view. */
-  show(world: World): void {
+  show(world: World, fit = true): void {
     if (!this.ready) return;
     this.current = world;
     this.shapes.clear();
@@ -103,7 +114,8 @@ export class BlueprintScene {
 
     for (const entity of world.entities) {
       const { x, y, width, height } = entity.footprint;
-      const color = categoryColor(entity.prototype);
+      const use = this.overlay?.get(entity.entity_number);
+      const color = use === undefined ? categoryColor(entity.prototype) : utilizationColor(use);
       const inset = 0.06 * TILE;
       this.shapes
         .roundRect(
@@ -132,7 +144,7 @@ export class BlueprintScene {
 
       if (isDirectional(entity.prototype)) this.drawArrow(entity);
     }
-    this.fit();
+    if (fit) this.fit();
   }
 
   /** PT: Enquadra a blueprint inteira na tela. EN: Fits the whole blueprint on screen. */
@@ -271,6 +283,18 @@ export class BlueprintScene {
       }) ?? null;
     this.onHover({ entity, screenX: px, screenY: py });
   }
+}
+
+// PT: Vermelho (parada) → amarelo (metade) → verde (no máximo). EN: Red (stopped) → yellow (half) → green (at maximum).
+function utilizationColor(use: number): number {
+  const u = clamp(use, 0, 1);
+  const mix = (a: number, b: number, f: number) => Math.round(a + (b - a) * f);
+  const [from, to, f] =
+    u < 0.5
+      ? [[0xd9, 0x53, 0x4f], [0xf0, 0xad, 0x4e], u * 2]
+      : [[0xf0, 0xad, 0x4e], [0x5c, 0xb8, 0x5c], (u - 0.5) * 2];
+  const [r, g, b] = [0, 1, 2].map((i) => mix(from[i] ?? 0, to[i] ?? 0, f as number));
+  return ((r ?? 0) << 16) | ((g ?? 0) << 8) | (b ?? 0);
 }
 
 function blockKey(tileX: number, tileY: number): string {

@@ -5,8 +5,12 @@
 //!     isolated instance with the `bf-validator` mod, creates a map, runs N ticks in benchmark mode
 //!     and compares the measured production with the expected one.
 
+mod bench;
+mod calibrate;
 mod compare;
 mod scenario;
+mod simcompare;
+mod throughput;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -45,6 +49,57 @@ enum CommandKind {
         #[arg(long)]
         assets: Option<PathBuf>,
     },
+    /// PT: Compara as simulações de fluxo com o jogo. EN: Compares the flow simulations with the game.
+    CompareSim {
+        /// PT: Pastas com cenários. EN: Folders with scenarios.
+        #[arg(default_values = ["validation/scenarios", "validation/scenarios/flow"])]
+        dirs: Vec<PathBuf>,
+        #[arg(long)]
+        headless: Option<PathBuf>,
+        #[arg(long, default_value = "target/bf-validate")]
+        work: PathBuf,
+        #[arg(long, default_value = "mod/bf-validator")]
+        mod_dir: PathBuf,
+        #[arg(long)]
+        assets: Option<PathBuf>,
+        /// PT: Relatório de saída. EN: Output report.
+        #[arg(long, default_value = "validation/measurements/sim-comparison.md")]
+        out: PathBuf,
+    },
+    /// PT: Mede o custo das simulações em blueprints sintéticas. EN: Measures the simulations' cost on synthetic blueprints.
+    BenchSim {
+        #[arg(long)]
+        assets: Option<PathBuf>,
+        #[arg(long, default_value = "target/bench")]
+        out_dir: PathBuf,
+        #[arg(long, default_value = "validation/measurements/sim-benchmarks.md")]
+        report: PathBuf,
+    },
+    /// PT: Calibra a simulação por tick contra a vazão medida. EN: Calibrates the tick simulation against the measured throughput.
+    CalibrateTick {
+        #[arg(long)]
+        assets: Option<PathBuf>,
+        #[arg(
+            long,
+            default_value = "validation/measurements/inserter-throughput.json"
+        )]
+        table: PathBuf,
+    },
+    /// PT: Mede a vazão dos insersores no jogo. EN: Measures inserter throughput in-game.
+    MeasureInserters {
+        #[arg(long)]
+        headless: Option<PathBuf>,
+        #[arg(long, default_value = "target/bf-validate")]
+        work: PathBuf,
+        #[arg(long, default_value = "mod/bf-validator")]
+        mod_dir: PathBuf,
+        /// PT: Tabela de saída. EN: Output table.
+        #[arg(
+            long,
+            default_value = "validation/measurements/inserter-throughput.json"
+        )]
+        out: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -64,7 +119,87 @@ fn main() -> Result<()> {
             }
             Ok(())
         }
+        CommandKind::CompareSim {
+            dirs,
+            headless,
+            work,
+            mod_dir,
+            assets,
+            out,
+        } => {
+            let headless = match headless {
+                Some(path) => path,
+                None => default_headless()?,
+            };
+            let assets = assets
+                .unwrap_or_else(|| PathBuf::from(format!("game-assets/{}", bf_data::GAME_VERSION)));
+            let simulators: Vec<simcompare::Simulator> =
+                vec![("steady", steady_sim), ("tick", tick_sim)];
+            let rows = simcompare::run(
+                &dirs,
+                &headless,
+                &work,
+                &mod_dir,
+                &assets,
+                &out,
+                &simulators,
+            )?;
+            if !simcompare::passes(&rows) {
+                std::process::exit(1);
+            }
+            Ok(())
+        }
+        CommandKind::BenchSim {
+            assets,
+            out_dir,
+            report,
+        } => {
+            let assets = assets
+                .unwrap_or_else(|| PathBuf::from(format!("game-assets/{}", bf_data::GAME_VERSION)));
+            bench::run(&assets, &out_dir, &report)
+        }
+        CommandKind::CalibrateTick { assets, table } => {
+            let assets = assets
+                .unwrap_or_else(|| PathBuf::from(format!("game-assets/{}", bf_data::GAME_VERSION)));
+            calibrate::run(&assets, &table)
+        }
+        CommandKind::MeasureInserters {
+            headless,
+            work,
+            mod_dir,
+            out,
+        } => {
+            let headless = match headless {
+                Some(path) => path,
+                None => default_headless()?,
+            };
+            throughput::measure(&headless, &work, &mod_dir, &out)?;
+            Ok(())
+        }
     }
+}
+
+fn steady_sim(
+    input: &bf_sim::SimInput<'_>,
+    _warmup: u32,
+    _measure: u32,
+) -> Result<bf_sim::FlowReport, bf_sim::SimError> {
+    bf_sim::steady::simulate(input)
+}
+
+// PT: A simulação por tick usa a mesma janela de aquecimento e medição do cenário no jogo.
+// EN: The tick simulation uses the same warm-up and measurement window as the in-game scenario.
+fn tick_sim(
+    input: &bf_sim::SimInput<'_>,
+    warmup: u32,
+    measure: u32,
+) -> Result<bf_sim::FlowReport, bf_sim::SimError> {
+    let options = bf_sim::tick::TickOptions {
+        warmup_ticks: warmup,
+        measure_ticks: measure,
+        ..bf_sim::tick::TickOptions::default()
+    };
+    bf_sim::tick::simulate_with(input, &options, &mut |_| true)
 }
 
 fn default_headless() -> Result<PathBuf> {
@@ -94,12 +229,28 @@ fn run(
         .unwrap_or_else(|| Path::new("."));
     let scenario = scenario::resolve_file(serde_json::from_str(&text)?, validation_dir)?;
     let prepared = scenario::prepare(scenario)?;
-    let lua = scenario::to_lua(&prepared)?;
-
     let headless = match headless {
         Some(path) => path,
         None => default_headless()?,
     };
+    let result = execute(&prepared, &headless, work, mod_dir)?;
+    println!("{}", serde_json::to_string_pretty(&result)?);
+    let mut passed = compare(&prepared.scenario, &result);
+    if prepared.scenario.compare {
+        passed &= compare::with_calculation(&prepared, &result, assets)?;
+    }
+    Ok(passed)
+}
+
+/// PT: Roda um cenário já conferido no headless e devolve o JSON gravado pelo mod.
+/// EN: Runs an already checked scenario on the headless server and returns the JSON written by the mod.
+pub(crate) fn execute(
+    prepared: &scenario::Prepared,
+    headless: &Path,
+    work: &Path,
+    mod_dir: &Path,
+) -> Result<Value> {
+    let lua = scenario::to_lua(prepared)?;
     let executable = headless.join("bin/x64/factorio");
     if !executable.is_file() {
         bail!(
@@ -190,12 +341,7 @@ fn run(
                 result_path.display()
             )
         })?)?;
-    println!("{}", serde_json::to_string_pretty(&result)?);
-    let mut passed = compare(&prepared.scenario, &result);
-    if prepared.scenario.compare {
-        passed &= compare::with_calculation(&prepared, &result, assets)?;
-    }
-    Ok(passed)
+    Ok(result)
 }
 
 // PT: Compara as taxas medidas com as esperadas e imprime o veredito de cada item.

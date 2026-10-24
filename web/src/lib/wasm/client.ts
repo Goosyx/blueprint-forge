@@ -4,11 +4,13 @@
 // EN: Engine client: creates the Web Worker, sends requests and applies a timeout. If the analysis
 //     exceeds the limit or the worker traps, it is recreated, with at most 3 attempts in a row and
 //     a growing delay; after that the engine stays failed until the page is reloaded.
-import type { Analysis, AnalysisOptions, ErrorBody } from '../types';
+import type { Analysis, AnalysisOptions, ErrorBody, FlowReport } from '../types';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 
 /** PT: Tempo máximo de uma análise. EN: Maximum time for one analysis. */
 const ANALYZE_TIMEOUT_MS = 20_000;
+/** PT: Tempo máximo da simulação por tick. EN: Maximum time for the tick simulation. */
+const SIMULATE_TIMEOUT_MS = 180_000;
 /** PT: Tentativas seguidas de recriação. EN: Recreation attempts in a row. */
 const MAX_RESTARTS = 3;
 
@@ -50,8 +52,45 @@ export class EngineClient {
     if (this.failed || !this.ready) throw new EngineError({ code: 'engine.not_ready' });
     // PT: Espera o `ready` atual (o worker pode ter sido recriado). EN: Wait for the current `ready` (the worker may have been recreated).
     await this.ready;
-    const json = await this.request(text, selected, JSON.stringify(options));
+    const json = await this.send(
+      (id) => ({ type: 'analyze', id, text, selected, options: JSON.stringify(options) }),
+      ANALYZE_TIMEOUT_MS,
+    );
     return JSON.parse(json) as Analysis;
+  }
+
+  /**
+   * PT: Simulação tick a tick (lenta). `cancel()` interrompe recriando o worker.
+   * EN: Tick-by-tick simulation (slow). `cancel()` interrupts it by recreating the worker.
+   */
+  async simulate(
+    text: string,
+    selected: number,
+    options: AnalysisOptions,
+    warmup: number,
+    measure: number,
+  ): Promise<FlowReport> {
+    if (this.failed || !this.ready) throw new EngineError({ code: 'engine.not_ready' });
+    await this.ready;
+    const json = await this.send(
+      (id) => ({
+        type: 'simulate',
+        id,
+        text,
+        selected,
+        options: JSON.stringify(options),
+        warmup,
+        measure,
+      }),
+      SIMULATE_TIMEOUT_MS,
+    );
+    return JSON.parse(json) as FlowReport;
+  }
+
+  /** PT: Cancela o que estiver rodando. EN: Cancels whatever is running. */
+  cancel(): void {
+    if (this.gameData === null || this.failed) return;
+    void this.spawn().catch(() => undefined);
   }
 
   /** PT: Encerra o worker. EN: Shuts the worker down. */
@@ -94,7 +133,10 @@ export class EngineClient {
     return ready;
   }
 
-  private request(text: string, selected: number, options: string): Promise<string> {
+  private send(build: (id: number) => WorkerRequest, timeoutMs: number): Promise<string> {
+    // PT: Sem worker (esperando a recriação), recusa na hora em vez de esperar o tempo limite.
+    // EN: Without a worker (waiting for the recreation), refuses right away instead of waiting for the timeout.
+    if (!this.worker) return Promise.reject(new EngineError({ code: 'engine.not_ready' }));
     const id = this.nextId++;
     return new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -103,10 +145,9 @@ export class EngineClient {
         // PT: O WASM não pode ser interrompido por dentro; recria o worker.
         // EN: The WASM cannot be interrupted from inside; recreate the worker.
         this.restart();
-      }, ANALYZE_TIMEOUT_MS);
+      }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
-      const message: WorkerRequest = { type: 'analyze', id, text, selected, options };
-      this.worker?.postMessage(message);
+      this.worker?.postMessage(build(id));
     });
   }
 

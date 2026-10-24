@@ -9,12 +9,13 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use bf_blueprint::Blueprint;
 use bf_data::{Effect, EnergySourceKind, EntityKind, GameData, Recipe};
+use bf_world::power::PowerCoverage;
 use bf_world::{Footprint, World};
 use serde::Serialize;
 
+use crate::CalcWarning;
 use crate::budget::{Budget, CalcError};
 use crate::effects::{add_scaled, clamp, filter_allowed, modules_effect, profile_factor};
-use crate::{AnalysisOptions, CalcWarning};
 
 /// PT: Lado do bloco do índice espacial, em tiles.
 /// EN: Side of the spatial index block, in tiles.
@@ -28,6 +29,8 @@ pub enum RecipeSource {
     Blueprint,
     Override,
     Fixed,
+    /// PT: Deduzida pelos itens que chegam (fornalhas). EN: Inferred from the arriving items (furnaces).
+    Inferred,
 }
 
 /// PT: Resultado de uma máquina.
@@ -50,6 +53,9 @@ pub struct MachineReport {
     pub power_w: f64,
     pub drain_w: f64,
     pub electric: bool,
+    /// PT: Falso quando é elétrica e nenhum poste a alcança (então não produz nem consome).
+    /// EN: False when it is electric and no pole reaches it (then it neither produces nor consumes).
+    pub powered: bool,
     pub pollution_per_minute: f64,
 }
 
@@ -102,11 +108,12 @@ pub(crate) fn machines<'a>(
     data: &'a GameData,
     blueprint: &Blueprint,
     world: &World,
-    options: &AnalysisOptions,
+    poles: &PowerCoverage,
+    choices: &BTreeMap<u64, (String, RecipeSource)>,
     warnings: &mut Vec<CalcWarning>,
     budget: &mut Budget,
 ) -> Result<Vec<Machine<'a>>, CalcError> {
-    let beacons = beacon_coverage(data, blueprint, world, budget)?;
+    let beacons = beacon_coverage(data, blueprint, world, poles, budget)?;
     let mut result = Vec::new();
 
     for (slot, placed) in world.entities.iter().enumerate() {
@@ -129,14 +136,15 @@ pub(crate) fn machines<'a>(
 
         // PT: Receita: a escolhida pelo usuário, a da blueprint ou a fixa da máquina.
         // EN: Recipe: the one chosen by the user, the blueprint's or the machine's fixed one.
-        let chosen = if let Some(name) = options.recipe_overrides.get(&placed.entity_number) {
+        let choice = choices.get(&placed.entity_number);
+        let chosen = if let Some((name, RecipeSource::Override)) = choice {
             Some((name.clone(), RecipeSource::Override))
         } else if let Some(name) = &placed.recipe {
             Some((name.clone(), RecipeSource::Blueprint))
+        } else if let Some(name) = fixed_recipe {
+            Some((name.clone(), RecipeSource::Fixed))
         } else {
-            fixed_recipe
-                .as_ref()
-                .map(|name| (name.clone(), RecipeSource::Fixed))
+            choice.cloned()
         };
 
         let mut recipe_source = None;
@@ -195,8 +203,14 @@ pub(crate) fn machines<'a>(
             None => clamp(effect, true, bf_data::DEFAULT_MAXIMUM_PRODUCTIVITY),
         };
 
+        let powered = poles.powered(slot);
+        if !powered {
+            warnings.push(CalcWarning::Unpowered {
+                entity_number: placed.entity_number,
+            });
+        }
         let crafts_per_second = match recipe {
-            Some(recipe) if recipe.energy_required > 0.0 => {
+            Some(recipe) if powered && recipe.energy_required > 0.0 => {
                 crafting_speed * (1.0 + effect.speed) / recipe.energy_required
             }
             _ => 0.0,
@@ -227,9 +241,14 @@ pub(crate) fn machines<'a>(
                 beacons: coverage.map_or(0, |c| c.count),
                 effect,
                 crafts_per_second,
-                power_w: usage * (1.0 + effect.consumption),
-                drain_w,
+                power_w: if powered {
+                    usage * (1.0 + effect.consumption)
+                } else {
+                    0.0
+                },
+                drain_w: if powered { drain_w } else { 0.0 },
                 electric,
+                powered,
                 pollution_per_minute: base_pollution
                     * (1.0 + effect.consumption)
                     * (1.0 + effect.pollution)
@@ -260,6 +279,7 @@ fn beacon_coverage(
     data: &GameData,
     blueprint: &Blueprint,
     world: &World,
+    poles: &PowerCoverage,
     budget: &mut Budget,
 ) -> Result<HashMap<usize, Coverage>, CalcError> {
     let mut index: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
@@ -286,7 +306,11 @@ fn beacon_coverage(
     // EN: Per machine: how many beacons reach it, the sum of what they transmit (already with
     //     `distribution_effectivity`) and the profile. Memory proportional to machines, not pairs.
     let mut reached: HashMap<usize, (usize, Effect, &[f64])> = HashMap::new();
-    for placed in &world.entities {
+    for (beacon_slot, placed) in world.entities.iter().enumerate() {
+        // PT: Beacon sem energia não transmite nada. EN: An unpowered beacon transmits nothing.
+        if !poles.powered(beacon_slot) {
+            continue;
+        }
         let Some(entity) = data.entities.get(&placed.name) else {
             continue;
         };

@@ -3,7 +3,7 @@
 //! EN: `wasm-bindgen` facade for the browser. Boundaries use JSON text: the blueprint string
 //!     goes in, the serialized result comes out. Errors become a `{code, message}` JSON.
 
-use bf_analysis::{AnalysisError, analyze};
+use bf_analysis::{AnalysisError, analyze, simulate_ticks};
 use bf_blueprint::Limits;
 use bf_calc::AnalysisOptions;
 use bf_data::GameData;
@@ -68,21 +68,65 @@ impl Engine {
         selected: u32,
         options_json: &str,
     ) -> Result<String, JsError> {
-        if options_json.len() > MAX_OPTIONS_BYTES {
-            return Err(js_error("analysis.options_too_large", String::new()));
-        }
-        let options: AnalysisOptions = if options_json.trim().is_empty() {
-            AnalysisOptions::default()
-        } else {
-            serde_json::from_str(options_json)
-                .map_err(|_| js_error("analysis.options_invalid", String::new()))?
-        };
+        let options = parse_options(options_json)?;
         let selected = usize::try_from(selected).unwrap_or(usize::MAX);
         let analysis = analyze(&self.data, text, selected, &options, &self.limits)
             .map_err(|e| analysis_error(&e))?;
         serde_json::to_string(&analysis).map_err(|error| js_error("internal", error.to_string()))
     }
+
+    /// PT: Simulação tick a tick da blueprint, com `warmup_ticks` de aquecimento e
+    ///     `measure_ticks` de medição (com teto). Devolve o relatório de fluxo em JSON. Para
+    ///     cancelar, a interface encerra o worker.
+    /// EN: Tick-by-tick simulation of the blueprint, with `warmup_ticks` of warm-up and
+    ///     `measure_ticks` of measurement (capped). Returns the flow report as JSON. To cancel, the
+    ///     interface terminates the worker.
+    pub fn simulate(
+        &self,
+        text: &str,
+        selected: u32,
+        options_json: &str,
+        warmup_ticks: u32,
+        measure_ticks: u32,
+    ) -> Result<String, JsError> {
+        let options = parse_options(options_json)?;
+        let ticks = bf_sim::tick::TickOptions {
+            warmup_ticks: warmup_ticks.min(MAX_WARMUP_TICKS),
+            measure_ticks: measure_ticks.clamp(60, MAX_MEASURE_TICKS),
+            ..bf_sim::tick::TickOptions::default()
+        };
+        let selected = usize::try_from(selected).unwrap_or(usize::MAX);
+        let flow = simulate_ticks(
+            &self.data,
+            text,
+            selected,
+            &options,
+            &self.limits,
+            &ticks,
+            &mut |_| true,
+        )
+        .map_err(|e| analysis_error(&e))?;
+        serde_json::to_string(&flow).map_err(|error| js_error("internal", error.to_string()))
+    }
 }
+
+// PT: Lê as opções em JSON (vazio = padrão), com teto de tamanho.
+// EN: Reads the JSON options (empty = default), with a size cap.
+fn parse_options(options_json: &str) -> Result<AnalysisOptions, JsError> {
+    if options_json.len() > MAX_OPTIONS_BYTES {
+        return Err(js_error("analysis.options_too_large", String::new()));
+    }
+    if options_json.trim().is_empty() {
+        return Ok(AnalysisOptions::default());
+    }
+    serde_json::from_str(options_json)
+        .map_err(|_| js_error("analysis.options_invalid", String::new()))
+}
+
+/// PT: Tetos da simulação por tick: 1 h de aquecimento e 10 min de medição, em ticks.
+/// EN: Tick simulation caps: 1 h of warm-up and 10 min of measurement, in ticks.
+const MAX_WARMUP_TICKS: u32 = 216_000;
+const MAX_MEASURE_TICKS: u32 = 36_000;
 
 /// PT: Tamanho máximo do JSON de opções. EN: Maximum size of the options JSON.
 const MAX_OPTIONS_BYTES: usize = 1024 * 1024;

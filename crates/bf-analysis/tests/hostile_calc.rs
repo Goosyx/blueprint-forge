@@ -29,6 +29,7 @@ fn data() -> GameData {
                 placed_by: Vec::new(),
                 energy_source: None,
                 energy_usage_w: None,
+                fluid_boxes: Vec::new(),
                 kind,
             },
         );
@@ -43,7 +44,6 @@ fn data() -> GameData {
             uses_module_effects: true,
             uses_beacon_effects: true,
             fixed_recipe: None,
-            fluid_boxes: Vec::new(),
         },
     );
     add(

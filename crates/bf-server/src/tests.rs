@@ -22,7 +22,7 @@ pub fn write_package(root: &Path) {
     fs::create_dir_all(dir.join("icons")).unwrap();
     fs::create_dir_all(dir.join("raw")).unwrap();
     let files: &[(&str, &[u8])] = &[
-        ("gamedata.json", br#"{"format_version":2,"game_version":"2.1.23","items":{},"fluids":{},"recipes":{},"entities":{},"tiles":{}}"#),
+        ("gamedata.json", br#"{"format_version":3,"game_version":"2.1.23","items":{},"fluids":{},"recipes":{},"entities":{},"tiles":{}}"#),
         ("locale/en.json", br#"{"language":"en"}"#),
         ("locale/pt-BR.json", br#"{"language":"pt-BR"}"#),
         ("icons/atlas.json", br#"{"cell":64}"#),
@@ -82,7 +82,7 @@ async fn lists_versions_and_serves_files() {
 
     let (status, headers, body) = get(&app, "/api/v1/game/2.1.23/data").await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body.starts_with(br#"{"format_version":2"#));
+    assert!(body.starts_with(br#"{"format_version":3"#));
     assert_eq!(headers[header::CONTENT_TYPE], "application/json");
     assert!(headers.contains_key(header::ETAG));
 

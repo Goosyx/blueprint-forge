@@ -43,8 +43,19 @@ end
 --     nil e o motivo quando um combinador com item fica sem esteira.
 -- EN: Finds the inputs and outputs in the pasted blueprint. Returns the table kept in `storage`,
 --     or nil and the reason when a combinator with items has no belt.
-function feed.detect(surface, force)
-  local found = { sources = {}, sinks = {} }
+function feed.detect(surface, force, offset, drain_chests)
+  local found = { sources = {}, sinks = {}, sunk = {}, chests = {}, counted = {} }
+  -- PT: Com `drain_chests`, os baús comuns são esvaziados e contados a cada tick, para nunca
+  --     encherem durante uma medição de vazão.
+  -- EN: With `drain_chests`, regular chests are emptied and counted every tick, so they never
+  --     fill up during a throughput measurement.
+  if drain_chests then
+    for _, chest in pairs(surface.find_entities_filtered({ type = "container", force = force })) do
+      local key = (chest.position.x - offset.x) .. "," .. (chest.position.y - offset.y)
+      found.chests[#found.chests + 1] = { chest = chest, key = key }
+      found.counted[key] = 0
+    end
+  end
   -- PT: Todos os pares (combinador, cabeça) a até 2,5 tiles, atribuídos do mais perto para o mais
   --     longe: a escolha não depende da ordem em que o jogo devolve as entidades.
   -- EN: Every (combinator, head) pair within 2.5 tiles, assigned from nearest to farthest: the
@@ -124,15 +135,19 @@ function feed.detect(surface, force)
     if vector and #belt.belt_neighbours.outputs == 0 and pure_output(belt) then
       local ahead = { belt.position.x + vector[1], belt.position.y + vector[2] }
       if #surface.find_entities_filtered({ position = ahead }) == 0 then
-        found.sinks[#found.sinks + 1] = belt
+        -- PT: Chave em coordenadas da blueprint, para a medição achar a saída.
+        -- EN: Key in blueprint coordinates, so the measurement can find the output.
+        local key = (belt.position.x - offset.x) .. "," .. (belt.position.y - offset.y)
+        found.sinks[#found.sinks + 1] = { belt = belt, key = key }
+        found.sunk[key] = 0
       end
     end
   end
   return found
 end
 
--- PT: Mantém as entradas cheias e esvazia as saídas. Roda a cada tick.
--- EN: Keeps the inputs full and empties the outputs. Runs every tick.
+-- PT: Mantém as entradas cheias e esvazia as saídas, contando o que foi apagado. Roda a cada tick.
+-- EN: Keeps the inputs full and empties the outputs, counting what was deleted. Runs every tick.
 function feed.tick(found)
   for _, source in pairs(found.sources) do
     if source.belt.valid then
@@ -144,10 +159,23 @@ function feed.tick(found)
       end
     end
   end
+  for _, drained in pairs(found.chests) do
+    if drained.chest.valid then
+      local inventory = drained.chest.get_inventory(defines.inventory.chest)
+      local count = inventory and inventory.get_item_count() or 0
+      if count > 0 then
+        found.counted[drained.key] = found.counted[drained.key] + count
+        inventory.clear()
+      end
+    end
+  end
   for _, sink in pairs(found.sinks) do
-    if sink.valid then
-      sink.get_transport_line(1).clear()
-      sink.get_transport_line(2).clear()
+    if sink.belt.valid then
+      for lane = 1, 2 do
+        local line = sink.belt.get_transport_line(lane)
+        found.sunk[sink.key] = found.sunk[sink.key] + line.get_item_count()
+        line.clear()
+      end
     end
   end
 end

@@ -24,6 +24,7 @@
     Analysis,
     AnalysisOptions,
     CalcWarning,
+    FlowReport,
     TreeNode,
     WorldWarning,
   } from '../lib/types';
@@ -36,9 +37,14 @@
   import PowerTab from './analyze/PowerTab.svelte';
   import MachinesTab from './analyze/MachinesTab.svelte';
   import MaterialsTab from './analyze/MaterialsTab.svelte';
+  import FlowTab from './analyze/FlowTab.svelte';
+  import SankeyTab from './analyze/SankeyTab.svelte';
 
-  type Tab = 'drawing' | 'production' | 'power' | 'machines' | 'materials';
-  const tabs: Tab[] = ['drawing', 'production', 'power', 'machines', 'materials'];
+  type Tab = 'drawing' | 'production' | 'flow' | 'sankey' | 'power' | 'machines' | 'materials';
+  const tabs: Tab[] = ['drawing', 'production', 'flow', 'sankey', 'power', 'machines', 'materials'];
+  /** PT: Aquecimento e medição da simulação por tick, em ticks. EN: Tick simulation warm-up and measurement, in ticks. */
+  const TICK_WARMUP = 36_000;
+  const TICK_MEASURE = 7_200;
 
   let input = $state('');
   let analyzedText = $state('');
@@ -56,6 +62,13 @@
   let canvasHost: HTMLDivElement;
   let saveMessage = $state<string | null>(null);
   let saving = $state(false);
+  let research = $state<'none' | 'all'>('all');
+  let overlay = $state(false);
+  let tick = $state<FlowReport | null>(null);
+  let tickState = $state<'idle' | 'running' | 'failed'>('idle');
+  // PT: Identifica a simulação por tick em curso; resultado ou erro de outra é descartado.
+  // EN: Identifies the running tick simulation; another one's result or error is dropped.
+  let tickToken = 0;
 
   const engine = new EngineClient();
   let scene: BlueprintScene | null = null;
@@ -107,6 +120,17 @@
     if (analysis && tab === 'drawing') scene?.show(analysis.world);
   });
 
+  // PT: Cores de utilização no desenho, pela simulação em regime estável.
+  // EN: Utilization colors on the drawing, from the steady-state simulation.
+  $effect(() => {
+    const flow = analysis?.flow;
+    scene?.setOverlay(
+      overlay && flow
+        ? new Map(flow.machines.map((m) => [m.entity_number, m.utilization] as const))
+        : null,
+    );
+  });
+
   // PT: Abre um texto vindo de outra página (detalhe da blueprint) assim que o motor fica pronto.
   // EN: Opens text coming from another page (blueprint detail) as soon as the engine is ready.
   $effect(() => {
@@ -145,9 +169,18 @@
 
   async function run(text: string, index: number): Promise<void> {
     if (engineState !== 'ready' || working) return;
+    // PT: A análise e a simulação dividem o worker: a simulação em curso é cancelada antes.
+    // EN: The analysis and the simulation share the worker: a running simulation is cancelled first.
+    if (tickState === 'running') cancelTicks();
     working = true;
     errorCode = null;
-    const options: AnalysisOptions = { recipe_overrides: recipeOverrides };
+    const options: AnalysisOptions = {
+      recipe_overrides: recipeOverrides,
+      inserter_research: research,
+    };
+    tickToken++;
+    tick = null;
+    tickState = 'idle';
     try {
       analysis = await engine.analyze(text, index, options);
       analyzedText = text;
@@ -178,12 +211,47 @@
     void run(analyzedText, selected);
   }
 
+  function setResearch(level: 'none' | 'all'): void {
+    if (working) return;
+    research = level;
+    void run(analyzedText, selected);
+  }
+
+  async function simulateTicks(): Promise<void> {
+    if (!analyzedText || tickState === 'running' || working) return;
+    const token = ++tickToken;
+    tickState = 'running';
+    try {
+      const report = await engine.simulate(
+        analyzedText,
+        selected,
+        { recipe_overrides: recipeOverrides, inserter_research: research },
+        TICK_WARMUP,
+        TICK_MEASURE,
+      );
+      if (token === tickToken) {
+        tick = report;
+        tickState = 'idle';
+      }
+    } catch {
+      if (token === tickToken) tickState = 'failed';
+    }
+  }
+
+  function cancelTicks(): void {
+    tickToken++;
+    engine.cancel();
+    tickState = 'idle';
+  }
+
   function clear(): void {
     input = '';
     analyzedText = '';
     analysis = null;
     errorCode = null;
     recipeOverrides = {};
+    tick = null;
+    tickState = 'idle';
   }
 
   function worldWarningText(warning: WorldWarning): string {
@@ -202,8 +270,8 @@
   }
 
   function calcWarningText(warning: CalcWarning): string {
-    if (warning.code === 'no_recipe')
-      return $t('warning.no_recipe', { entity_number: warning.entity_number });
+    if (warning.code === 'no_recipe' || warning.code === 'unpowered')
+      return $t(`warning.${warning.code}`, { entity_number: warning.entity_number });
     return $t(`warning.${warning.code}`, {
       entity_number: warning.entity_number,
       recipe: warning.recipe,
@@ -223,7 +291,8 @@
         name: flow.name,
         net: flow.produced_per_second - flow.consumed_per_second,
       }))
-      .filter((flow) => flow.net > 1e-9)
+      // PT: Ignora resíduos numéricos do solver. EN: Ignores the solver's numeric residue.
+      .filter((flow) => flow.net > 1e-6)
       .sort((a, b) => b.net - a.net)
       .slice(0, 6),
   );
@@ -372,6 +441,11 @@
           <button type="button" class="secondary" onclick={() => scene?.fit()}
             >{$t('analyze.fit')}</button
           >
+          {#if analysis?.flow}
+            <label class="overlay"
+              ><input type="checkbox" bind:checked={overlay} />{$t('analyze.overlay')}</label
+            >
+          {/if}
           <span class="muted">{$t('analyze.hover_hint')}</span>
         </div>
         {#if hover?.entity}
@@ -390,6 +464,24 @@
         <div class="panel">
           {#if tab === 'production'}
             <ProductionTab report={analysis.report} {unit} />
+          {:else if tab === 'flow'}
+            <FlowTab
+              {analysis}
+              {unit}
+              {research}
+              busy={working}
+              onResearch={setResearch}
+              {tick}
+              {tickState}
+              onSimulate={simulateTicks}
+              onCancel={cancelTicks}
+            />
+          {:else if tab === 'sankey'}
+            {#if analysis.sankey}
+              <SankeyTab sankey={analysis.sankey} {unit} />
+            {:else}
+              <p class="muted">{$t('flow.unavailable')}</p>
+            {/if}
           {:else if tab === 'power'}
             <PowerTab report={analysis.report} {unit} />
           {:else if tab === 'machines'}
@@ -529,6 +621,17 @@
     display: flex;
     gap: 8px;
     align-items: center;
+  }
+  .overlay {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
   }
   .panel {
     overflow: auto;
